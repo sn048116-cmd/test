@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医療翻訳アプリ</title>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; background: white; }
+        #status { color: #007bff; font-weight: bold; margin: 15px; padding: 10px; border: 1px solid #eee; }
+        canvas { max-width: 100%; border: 1px solid #ccc; display: none; }
+        .btn { background: #007bff; color: white; padding: 15px; border-radius: 8px; display: block; width: 80%; margin: 10px auto; font-weight: bold; cursor: pointer; border: none; }
+        #saveBtn { background: #28a745; display: none; }
+    </style>
+</head>
+<body>
+    <h3>🏥 医療領収書 翻訳＆換算</h3>
+    <select id="ratio" style="width: 80%; padding: 10px; font-size: 16px; margin-bottom:10px;">
+        <option value="0.3">3割負担</option>
+        <option value="1.0">10割負担</option>
+    </select>
+
+    <label class="btn">📸 写真を選択/撮影
+        <input type="file" id="inp" accept="image/*" style="display:none;">
+    </label>
+    
+    <div id="status">写真を読み込んでください</div>
+    <div id="saveBtn" class="btn">画像を保存</div>
+    <canvas id="cvs"></canvas>
+
+<script>
+    const inp = document.getElementById('inp'), st = document.getElementById('status'), cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d'), saveBtn = document.getElementById('saveBtn'), rat = document.getElementById('ratio');
+
+    inp.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        st.innerText = "画像を読み込み中...";
+
+        const img = new Image();
+        img.src = URL.createObjectURL(file);
+        img.onload = async () => {
+            const scale = 800 / img.width;
+            cvs.width = 800; cvs.height = img.height * scale;
+            ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+            cvs.style.display = "block";
+            st.innerText = "文字解析中... (30%〜100%まで待ってね)";
+
+            try {
+                const { data } = await Tesseract.recognize(file, 'jpn', { logger: m => { if(m.status === 'recognizing text') st.innerText = `解析中: ${Math.round(m.progress * 100)}%`; } });
+                const ratio = parseFloat(rat.value);
+                const dict = {"初診":"First Visit","再診":"Follow-up","投薬":"Medication","注射":"Injection","検査":"Test","合計":"TOTAL"};
+
+                data.lines.forEach(line => {
+                    const txt = line.text.replace(/\s+/g, '');
+                    const box = line.bbox;
+                    const x = box.x0 * scale, y = box.y0 * scale, w = (box.x1-box.x0)*scale, h = (box.y1-box.y0)*scale, fs = h * 0.9;
+                    for (let k in dict) { if (txt.includes(k)) { ctx.fillStyle = "white"; ctx.fillRect(x, y, w, h); ctx.fillStyle = "black"; ctx.font = `bold ${fs}px Arial`; ctx.fillText(dict[k], x, y + fs * 0.8); } }
+                    const m = txt.match(/(\d+)(?=点)/);
+                    if (m) { ctx.fillStyle = "red"; ctx.font = `bold ${fs}px Arial`; const yen = Math.round(parseInt(m) * 10 * ratio); ctx.fillText(` (${yen.toLocaleString()} Yen)`, (box.x1 * scale) + 5, y + fs * 0.8); }
+                });
+                st.innerText = "✅ 完了！画像を長押しして保存してね";
+                saveBtn.style.display = "block";
+            } catch (err) { st.innerText = "エラー: " + err.message; }
+        };
+    };
+</script>
+</body>
+</html>
