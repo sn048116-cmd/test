@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>医療翻訳＆換算アプリ</title>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: -apple-system, sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .box { max-width: 500px; margin: auto; padding: 20px; }
+        #status { font-weight: bold; margin: 20px 0; color: #007bff; }
+        canvas { max-width: 100%; display: none; margin-top: 15px; }
+        .btn { background: #007bff; color: #fff; padding: 15px; border-radius: 10px; display: inline-block; }
+        #saveBtn { background: #28a745; display: none; margin-top: 15px; }
+    </style>
+</head>
+<body>
+<div class="box">
+    <h2>Medical Translator</h2>
+    <select id="ratio">
+        <option value="0.3">3割負担</option><option value="1.0">10割</option>
+    </select>
+    <label class="btn">📸 撮影/選択<input type="file" id="inp" accept="image/*" style="display:none;"></label>
+    <div id="status">写真を読み込んでください</div>
+    <div id="saveBtn" class="btn">加工画像を保存</div>
+    <canvas id="cvs"></canvas>
+</div>
+<script>
+// (中略：画像処理・解析・描画ロジック)
+// ※上記の長いコードをここに記述（Tesseract v5, 画像縮小処理を含む）
+</script>
+</body>
+</html>
